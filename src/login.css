@@ -7,6 +7,14 @@
   padding: 1rem;
   background: var(--gradient-hero);
   overflow: auto;
+  position: relative;
+}
+
+@media (min-width: 769px) {
+  .login-container {
+    display: grid;
+    place-items: center;
+  }
 }
 
 .login-box {

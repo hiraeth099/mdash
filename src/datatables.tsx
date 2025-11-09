@@ -372,13 +372,23 @@ const snapToTens = (v: number, mode: "floor" | "nearest" | "ceil" = "floor") => 
   };
 
   return (
-    <div className="page-content">
-      {userRole !== "admin" && (
+    <div className="page-content data-page">
+      {userRole !== "admin" ? (
         <div className="header">
           <Link to={`/userGames`}>Games</Link>
           <Link to={"/insert"}>Insert</Link>
           <Link to={`/history/${gameid}/${gamename}`}>HISTORY</Link>
           <Link to={`/data/${gameid}/${gamename}`} className="active">TOTAL</Link>
+        </div>
+      ) : (
+        <div className="header">
+          <Button
+            type="text"
+            icon={<span style={{ fontSize: '20px' }}>←</span>}
+            onClick={() => window.history.back()}
+          >
+            Back
+          </Button>
         </div>
       )}
 

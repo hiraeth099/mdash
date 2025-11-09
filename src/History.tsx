@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Modal, Input, Select, message, Spin, DatePicker, Checkbox } from "antd";
+import { Table, Button, Modal, Input, Select, message, Spin, DatePicker, Checkbox, Grid } from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { Link, useParams } from "react-router-dom";
 import dayjs from "dayjs";
@@ -8,6 +8,7 @@ import { apiClient } from "./utils/api";
 import { IGroup } from "./userGames";
 import { IGame } from "./games";
 import { checkAuthAndHandleLogout } from "./authcheck";
+import "./datatable.css";
 
 interface HistoryRecord {
   history_id: number;
@@ -183,6 +184,9 @@ useEffect(() => {
   }, []);
   
 
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
+
   const tableTypes = [
     { key: "open", typeId: 4, title: "Open" },
     { key: "openPana", typeId: 3, title: "Open Pana" },
@@ -205,6 +209,56 @@ useEffect(() => {
         return matchesNumber && matchesAmount;
       });
 
+    if (isMobile) {
+      return (
+        <div key={key} style={{ marginBottom: "20px" }}>
+          <h3 style={{ textAlign: "center", marginBottom: "1rem", color: "var(--color-heading)" }}>{title}</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {filteredData.map((record) => (
+              <div key={record.history_id} className="mobile-card" style={{ position: "relative" }}>
+                <div className="mobile-card__row">
+                  <span className="mobile-card__label">Number</span>
+                  <span className="mobile-card__value">{record.history_number}</span>
+                </div>
+                <div className="mobile-card__row">
+                  <span className="mobile-card__label">Amount</span>
+                  <span className="mobile-card__value">{record.history_amount}</span>
+                </div>
+                <div className="mobile-card__row">
+                  <span className="mobile-card__label">Created</span>
+                  <span className="mobile-card__value">{dayjs(record.history_created_at).format("h:mm A")}</span>
+                </div>
+                <div className="mobile-card__row">
+                  <span className="mobile-card__label">Modified</span>
+                  <span className="mobile-card__value">
+                    {record.history_modified_at ? dayjs(record.history_modified_at).format("h:mm A") : "N/A"}
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+                  <Checkbox
+                    checked={selectedIds.includes(record.history_id)}
+                    onChange={(e) => handleCheckboxChange(record.history_id, e.target.checked)}
+                  />
+                  <Button
+                    icon={<EditOutlined />}
+                    size="small"
+                    style={{ color: "blue" }}
+                    onClick={() => handleEdit(record)}
+                  />
+                  <Button
+                    icon={<DeleteOutlined />}
+                    size="small"
+                    danger
+                    onClick={() => handleDelete(record.history_id)}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <Table
         key={key}
@@ -214,8 +268,8 @@ useEffect(() => {
         bordered
         pagination={false}
         title={() => title}
-  scroll={{ y: 300 }} 
-          style={{ marginBottom: "20px",  maxWidth:'750px'}}
+  scroll={{ y: 300 }}
+          style={{ marginBottom: "20px", width: "100%", margin: "0 1rem 20px 1rem" }}
       >
         <Table.Column title="Number" dataIndex="history_number" key="history_number" />
         <Table.Column title="Amount" dataIndex="history_amount" key="history_amount" />
@@ -456,7 +510,7 @@ const handleCheckboxChange = (id: number, checked: boolean) => {
   };
 
   return (
-    <div>
+    <div className="data-page">
       <div className="header">
         <Link to={`/userGames`}>Games</Link>
         <Link to={'/insert'}>Insert</Link>
@@ -466,10 +520,12 @@ const handleCheckboxChange = (id: number, checked: boolean) => {
         <Link to={`/data/${gameId}/${gamename}`}>TOTAL</Link>
       </div>
       {loading ? (
-        <Spin size="large" />
+        <div className="loading-container">
+          <Spin size="large" />
+        </div>
       ) : (
         <div>
-          <div style={{display:'flex', justifyContent:'space-evenly'}}>
+          <div className="filter-header" style={{display:'flex', justifyContent:'space-evenly', flexWrap: 'wrap', gap: '1rem', padding: '1rem'}}>
 
           <DatePicker
             value={dayjs(selectedDate)}
@@ -515,7 +571,7 @@ const handleCheckboxChange = (id: number, checked: boolean) => {
 
                       </div>
             </div>
-            <div style={{ marginBottom: 16, display: "flex", gap: 8 }}>
+            <div className="filter-header" style={{ marginBottom: 16, display: "flex", gap: 8, flexWrap: 'wrap' }}>
         <Input
           placeholder="Search History Number"
           value={searchNumber}
@@ -542,7 +598,9 @@ const handleCheckboxChange = (id: number, checked: boolean) => {
           Delete Selected
         </Button>
       </div>
-   {filteredTables}
+      <div style={{ maxHeight: isMobile ? '80vh' : 'auto', overflowY: isMobile ? 'auto' : 'visible', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {filteredTables}
+      </div>
         </div>
       )}
 

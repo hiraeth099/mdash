@@ -3,6 +3,7 @@ import { DatePicker, Spin, message, Button, Modal, Table } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { saveAs } from "file-saver";
+import { Link } from "react-router-dom";
 import { apiClient } from "./utils/api";
 import "./datatable.css";
 import { checkAuthAndHandleLogout } from "./authcheck";
@@ -155,15 +156,22 @@ const SummaryDashboard: React.FC = () => {
   return (
     <div className="data-page">
       <div className="header">
+        <Link to="/users">Users</Link>
+        <Link to="/games">Games</Link>
+        <Link to="/groups">Groups</Link>
+        <Link to="/result/:gameid/:gamename">Settlement</Link>
+        <Link to="/summary" className="active">Day</Link>
+      </div>
+      <div className="header">
         <h2>Day Profit and Loss</h2>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <DatePicker
             value={dayjs(selectedDate)}
             onChange={(date) => setSelectedDate(date?.format("YYYY-MM-DD") || selectedDate)}
           />
-          <Button 
+          <Button
             onClick={showConfirm}
-            disabled={dayjs(selectedDate).isBefore(dayjs().subtract(3, 'day'))}
+            disabled={dayjs(selectedDate).isBefore(dayjs().subtract(15, 'day'))}
           >
             Recalculate
           </Button>

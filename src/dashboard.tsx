@@ -225,6 +225,7 @@ const showConfirm = () => {
                   </Link>
                   <Link to="/groups">Groups</Link>
                   <Link to="/result/:gameid/:gamename" className="active">Settlement</Link>
+                  <Button type="primary" onClick={()=>navigate("/summary")}>Day</Button>
                 </div>)}
       <div className="header">
         <div className="controls">
@@ -253,7 +254,7 @@ const showConfirm = () => {
 )}
          <Button
   style={{ backgroundColor: "black", color: "red" }}
-  disabled={!selectedGroupId}
+  disabled={!selectedGroupId || dayjs(selectedDate).isBefore(dayjs().subtract(15, 'day'))}
   onClick={showConfirm}
 >
   Recalculate
@@ -262,7 +263,6 @@ const showConfirm = () => {
             Export as Excel
           </Button>
         </div>
-        <Button type="primary" onClick={()=>navigate("/summary")}>Day</Button>
       </div>
       <div>
      
@@ -272,10 +272,11 @@ const showConfirm = () => {
           <Spin size="large" />
         </div>
       ) : (
-        <div className="grid-container">
+        <div className="payment-summary-container">
           <div className="table-container">
             <h3>Payment Summary</h3>
-           <Table
+           <div className="payment-summary-table">
+             <Table
   dataSource={paymentData}
   columns={[
     { title: "Game", dataIndex: "res_game", key: "res_game" },
@@ -308,7 +309,44 @@ const showConfirm = () => {
     return "";
   }}
 />
+</div>
 
+<div className="payment-summary-cards">
+  {paymentData.map((row, index) => {
+    const isLast = index === paymentData.length - 1;
+    const cardClass = isLast
+      ? (row.res_win_amt < 0 ? "negative-row" : "positive-row")
+      : "";
+    return (
+      <div key={index} className={`mobile-card ${cardClass} ${isLast ? 'blink' : ''}`}>
+        <div className="mobile-card__row">
+          <span className="mobile-card__label">Game</span>
+          <span className="mobile-card__value">{row.res_game}</span>
+        </div>
+        <div className="mobile-card__row">
+          <span className="mobile-card__label">Type</span>
+          <span className="mobile-card__value">{row.res_type}</span>
+        </div>
+        <div className="mobile-card__row">
+          <span className="mobile-card__label">Bet On</span>
+          <span className="mobile-card__value">{row.res_bet_on}</span>
+        </div>
+        <div className="mobile-card__row">
+          <span className="mobile-card__label">Bet Amount</span>
+          <span className="mobile-card__value">{row.res_bet_amt}</span>
+        </div>
+        <div className="mobile-card__row">
+          <span className="mobile-card__label">Payable Times</span>
+          <span className="mobile-card__value">{row.res_payable_times}</span>
+        </div>
+        <div className="mobile-card__row">
+          <span className="mobile-card__label">Win Amount</span>
+          <span className="mobile-card__value">{row.res_win_amt}</span>
+        </div>
+      </div>
+    );
+  })}
+</div>
 
           </div>
         </div>

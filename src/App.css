@@ -50,7 +50,7 @@
 .ant-select-selector,
 .ant-input,
 .ant-picker {
-  border-radius: 0.5rem !important;
+  border-radius: 0.75rem !important;
   border: 2px solid var(--color-border) !important;
   background-color: rgba(17, 37, 42, 0.85) !important;
   color: var(--color-heading) !important;
@@ -86,26 +86,27 @@
 }
 
 .ant-select-dropdown {
-  background: var(--gradient-surface) !important;
-  border: 1px solid rgba(62, 207, 142, 0.18) !important;
+  background: linear-gradient(135deg, #fb923c 0%, #fdb022 100%) !important;
+  border: 1px solid rgba(251, 146, 60, 0.3) !important;
   border-radius: 0.75rem !important;
   box-shadow: var(--shadow-soft) !important;
 }
 
 .ant-select-item {
-  color: var(--color-text) !important;
+  color: #0b1716 !important;
   transition: all 0.2s ease !important;
+  font-weight: 500 !important;
 }
 
 .ant-select-item:hover {
-  background-color: rgba(62, 207, 142, 0.18) !important;
-  color: var(--color-heading) !important;
+  background-color: rgba(253, 176, 34, 0.2) !important;
+  color: #0b1716 !important;
 }
 
 .ant-select-item-option-selected {
-  background-color: rgba(62, 207, 142, 0.24) !important;
-  color: var(--color-heading) !important;
-  font-weight: 600 !important;
+  background-color: rgba(251, 146, 60, 0.35) !important;
+  color: #0b1716 !important;
+  font-weight: 700 !important;
 }
 
 .ant-picker-dropdown {

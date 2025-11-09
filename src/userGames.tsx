@@ -61,11 +61,12 @@ const Games: React.FC = () => {
       render: (text: string, record: IGame) => (
         <span
           style={{
-            color: "blue",
+            color: "#3b82f6",
             fontSize: "34px",
             fontStyle: "italic",
             cursor: "pointer",
             textDecoration: "none",
+            fontWeight: 600,
           }}
           onClick={() => handleGameClick(record)}
         >
