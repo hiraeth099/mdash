@@ -1,0 +1,320 @@
+import React, { useEffect, useState } from "react";
+import { Table, Button, DatePicker, Select, Spin, message, Modal } from "antd";
+import dayjs from "dayjs";
+import { apiClient } from "./utils/api";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useUserStore } from "./store/store";
+import "./datatable.css";
+const { Option } = Select;
+import pdfMake from "pdfmake/build/pdfmake";
+import { vfs } from "pdfmake/build/vfs_fonts";
+import { IUser } from "./users";
+import { checkAuthAndHandleLogout } from "./authcheck";
+
+pdfMake.vfs = vfs;
+export interface PaymentData {
+  res_game: string;
+  res_type: string;
+  res_bet_on: string;
+  res_bet_amt: number;
+  res_payable_times: number;
+  res_win_amt: number;
+}
+const Dashboard: React.FC = () => {
+  const { gameid, gamename } = useParams<{
+    gameid: string;
+    gamename: string;
+  }>();
+  const [users,setusers] = useState<IUser[]>([])
+  const { userRole } = useUserStore();
+  const [grpname,setGrpname] = useState<string>();
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+  //const [data, setData] = useState([]);
+  const [paymentData, setPaymentData] = useState<PaymentData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(
+    dayjs().format("YYYY-MM-DD")
+  );
+  const [groups, setGroups] = useState([]);
+  //const [groupedData, setGroupedData] = useState<{
+  //  [key: string]: { typename: string; data: any[] };
+  //}>({});
+const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
+useEffect(()=>{console.log(users)},[users])
+  const handleGroupChange = (groupName: string) => {
+    setGrpname(groupName)
+    const group = groups.find((group) => group["group_name"] === groupName);
+    setSelectedGroupId(group ? group["group_id"] : null);
+     if (group && group["group_id"] && users) {
+    // Find the first user whose group_ids include the selected group_id
+    const user = (users ?? []).find((user) => user.group_ids.includes(group["group_id"]));
+    console.log(user)
+    setSelectedUser(user || null);
+  } else {
+    setSelectedUser(null);
+  }
+  };
+
+  useEffect(() => {
+    fetchGroups();
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    if (selectedGroupId !== null) {
+      fetchData();
+    }
+  }, [selectedDate, selectedGroupId]);
+
+  const fetchGroups = async () => {
+    setLoading(true);
+    try {
+      const stillLoggedIn = await checkAuthAndHandleLogout();
+  if (!stillLoggedIn) return;
+      const response = await apiClient.get("/groups");
+      setGroups(response.data);
+    } catch (error) {
+      message.error("Failed to fetch groups");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+ 
+const navigate = useNavigate()
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const stillLoggedIn = await checkAuthAndHandleLogout();
+  if (!stillLoggedIn) return;
+      const response = await apiClient.get("/users");
+      setusers(response.data.users)
+
+      // Find current logged-in user
+      // Remove the logged-in user from the list for dropdown
+      //const filteredUsers = allUsers.filter((user) => user.user_id !== userId);
+      //setUsers(filteredUsers);
+    } catch (error) {
+      message.error("Failed to fetch users");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const endpoint = "/group-payments-by-date";
+      const requestBody = {
+        gamedate: dayjs(selectedDate).format("YYYY-MM-DD"),
+        groupid: selectedGroupId,
+        gameid: 0,
+      };
+      const response = await apiClient.post(endpoint, requestBody);
+      // setData(response.data);
+const data = response.data;
+if (data.length > 0) {
+  const lastIndex = data.length - 1;
+  const lastElement = data[lastIndex];
+  lastElement.res_game = lastElement.res_win_amt < 0 ? "payment" : "due";
+}
+setPaymentData(data);
+    } catch (error) {
+      message.error("Failed to fetch data");
+    } finally {
+      setLoading(false);
+    }
+  };
+ const recalc = async () => {
+     try {
+         const res = await apiClient.post('/recalculate', {
+             groupid:selectedGroupId,
+            date:selectedDate
+       });
+
+       if (res.status === 200) {
+           return fetchData()
+        } else {
+            console.warn("Unexpected response:", res.status, res.data);
+         }
+     } catch (error) {
+         message.error("Recalculation failed:");
+  }
+ };
+const showConfirm = () => {
+ // Modal.info({
+  //  title: "Feature Unavailable",
+    //content: "Recalculation is temporarily unavailable. Please try again later.",
+ // });
+
+   Modal.confirm({
+    title: "Are you sure?",
+   content: "Once recalculated, data cannot be reverted. Be careful.",
+     onOk: () => {
+      recalc();
+     },
+   });
+};
+
+  const exportToCSV = () => {
+     const tableBody = [
+    ["Game", "Type", "Bet On", "Bet Amount", "Payable Times", "Win Amount"],
+    ...paymentData.map(
+      ({
+        res_game,
+        res_type,
+        res_bet_on,
+        res_bet_amt,
+        res_payable_times,
+        res_win_amt,
+      }) => [
+        res_game,
+        res_type,
+        res_bet_on,
+        res_bet_amt,
+        res_payable_times,
+        res_win_amt,
+      ]
+    ),
+  ];
+   const groupLabel = grpname ?? "All Groups";
+  const formattedDate = dayjs(selectedDate).format("YYYY-MM-DD");
+  const headerText = `Final Payment Data for group (${groupLabel}) - ${formattedDate}`;
+  const docDefinition = {
+    content: [
+      { text: headerText, style: "header" },
+      { text: `Generated on: ${dayjs().format("YYYY-MM-DD HH:mm:ss")}`, style: "subheader" },
+      {
+        table: {
+          headerRows: 1,
+          widths: ["*", "*", "*", "*", "*", "*"],
+          body: tableBody,
+        },
+      },
+    ],
+    styles: {
+      header: {
+        fontSize: 18,
+        bold: true,
+        marginBottom: 15,
+      },
+    },
+  };
+
+  // Build the file name using selectedDate and selectedGroupId
+  const fileName = `${selectedDate}(${grpname}).pdf`;
+
+  // Create and download the PDF
+  pdfMake.createPdf(docDefinition).download(fileName);
+  };
+
+  return (
+    <div className="data-page">
+      {userRole != "admin" ? (
+        <div className="header">
+          <Link to={`/insert/${gameid}/${gamename}`}>INSERT</Link>
+          <Link to={`/history/${gameid}/${gamename}`}>HISTORY</Link>
+          <Link to={`/data/${gameid}/${gamename}`} className="active">
+            TOTAL
+          </Link>
+        </div>
+      ):( <div className="header">
+                  <Link to="/users">Users</Link>
+                  <Link to="/games">
+                    Games
+                  </Link>
+                  <Link to="/groups">Groups</Link>
+                  <Link to="/result/:gameid/:gamename" className="active">Settlement</Link>
+                </div>)}
+      <div className="header">
+        <div className="controls">
+          <DatePicker
+            value={dayjs(selectedDate)}
+            onChange={(date) =>
+              setSelectedDate(date?.format("YYYY-MM-DD") || selectedDate)
+            }
+          />
+          <Select
+            onChange={handleGroupChange}
+            style={{ width: 200 }}
+            defaultValue="Select Group"
+          >
+            <option value="Select Group">Select Group</option>
+            {groups.map((group) => (
+              <Option key={group["group_id"]} value={group["group_name"]}>
+                {group["group_name"]}
+              </Option>
+            ))}
+          </Select>
+{selectedUser && (
+  <p style={{ fontWeight: "bold", color: "black" }}>
+    User: {selectedUser.user_name}
+  </p>
+)}
+         <Button
+  style={{ backgroundColor: "black", color: "red" }}
+  disabled={!selectedGroupId}
+  onClick={showConfirm}
+>
+  Recalculate
+</Button>
+          <Button type="primary" onClick={exportToCSV}>
+            Export as Excel
+          </Button>
+        </div>
+        <Button type="primary" onClick={()=>navigate("/summary")}>Day</Button>
+      </div>
+      <div>
+     
+      </div>
+      {loading ? (
+        <div className="loading-container">
+          <Spin size="large" />
+        </div>
+      ) : (
+        <div className="grid-container">
+          <div className="table-container">
+            <h3>Payment Summary</h3>
+           <Table
+  dataSource={paymentData}
+  columns={[
+    { title: "Game", dataIndex: "res_game", key: "res_game" },
+    { title: "Type", dataIndex: "res_type", key: "res_type" },
+    { title: "Bet On", dataIndex: "res_bet_on", key: "res_bet_on" },
+    {
+      title: "Bet Amount",
+      dataIndex: "res_bet_amt",
+      key: "res_bet_amt",
+    },
+    {
+      title: "Payable Times",
+      dataIndex: "res_payable_times",
+      key: "res_payable_times",
+    },
+    {
+      title: "Win Amount",
+      dataIndex: "res_win_amt",
+      key: "res_win_amt",
+    },
+  ]}
+  rowKey="game"
+  pagination={false}
+  scroll={{ y: 350 }}
+  rowClassName={(_, index) => {
+    if (index === paymentData.length - 1) {
+      const baseClass = paymentData[index].res_win_amt < 0 ? "negative-row" : "positive-row";
+      return `${baseClass} blink`;
+    }
+    return "";
+  }}
+/>
+
+
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Dashboard;
